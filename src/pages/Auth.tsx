@@ -279,8 +279,8 @@ Please contact the user or verify the request.
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-secondary/10 blur-3xl" />
 
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-black mb-2 font-display text-white italic">
-              {isResetSession ? 'NEW PASSWORD' : (isForgotPassword ? 'RESET PASSWORD' : (isLogin ? 'WELCOME BACK' : 'ACCOUNT CREATE'))}
+            <h1 className="text-4xl font-black mb-2 font-display text-white italic tracking-tighter">
+              {isResetSession ? 'NEW PASSWORD' : (isForgotPassword ? 'RESET PASSWORD' : (isLogin ? 'WELCOME BACK' : 'JOIN THE COMMUNITY'))}
             </h1>
             <p className="text-gray-400">
               {isResetSession 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ShieldCheck, Zap, Laptop, Smartphone, Star, TrendingUp, ChevronRight } from 'lucide-react';
+import { ShieldCheck, Zap, Laptop, Smartphone, Star, TrendingUp, ChevronRight, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -26,7 +26,6 @@ export function Home() {
     }
 
     const loadGames = async () => {
-      // Try Supabase first if configured
       if (isSupabaseConfigured) {
         try {
           const { data, error } = await supabase
@@ -37,7 +36,6 @@ export function Home() {
           if (error) throw error;
           
           if (data && data.length > 0) {
-            // Group by game_name to get unique games
             const uniqueGames = data.reduce((acc: any[], current: any) => {
               const gameId = current.game_name.toLowerCase().replace(/\s+/g, '-');
               if (!acc.find(g => g.id === gameId)) {
@@ -101,7 +99,6 @@ export function Home() {
             className="w-full h-full object-cover opacity-30 scale-105"
             referrerPolicy="no-referrer"
           />
-          {/* Animated Glow Elements */}
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-primary/20 blur-[120px] rounded-full animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-secondary/10 blur-[120px] rounded-full animate-pulse delay-700" />
         </div>
@@ -129,15 +126,11 @@ export function Home() {
             </p>
             
             <div className="flex flex-wrap gap-6 pt-2">
-              <a href="#games" className="btn-primary flex items-center gap-3 px-10 py-5 rounded-2xl group">
-                EXPLORE INVENTORY
-                <Zap className="w-5 h-5 group-hover:fill-current transition-all" />
-              </a>
-              <Link to={user ? "/dashboard" : "/auth"} className="btn-secondary px-10 py-5 rounded-2xl border-white/20 hover:bg-white/10 uppercase font-black tracking-widest text-[10px]">
-                {user ? "MY DASHBOARD" : "CREATE ACCOUNT"}
+              <Link to={user ? "/dashboard" : "/auth"} className="btn-primary px-10 py-5 rounded-2xl group uppercase font-black tracking-widest text-[11px] flex items-center gap-3">
+                {user ? "MY DASHBOARD" : "GET STARTED"}
+                <Zap className="w-4 h-4 group-hover:fill-current transition-all" />
               </Link>
             </div>
-            
           </motion.div>
         </div>
       </section>
@@ -145,7 +138,7 @@ export function Home() {
       {/* Featured Games */}
       <section id="games" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
-          <div className="space-y-2">
+          <div className="space-y-4">
             <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight font-display">READY FOR TOP-UP</h2>
             <div className="h-1.5 w-24 bg-brand-primary rounded-full" />
           </div>
@@ -211,7 +204,83 @@ export function Home() {
         </div>
       </section>
 
-      {/* Instructions / How it Works */}
+      {/* Account Registration CTA Section */}
+      {!user && (
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-[3rem] overflow-hidden bg-white/[0.03] border border-white/5 p-8 md:p-16">
+            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-brand-primary/20 blur-[120px]" />
+            <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-96 h-96 bg-brand-secondary/10 blur-[120px]" />
+            
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <span className="text-[10px] font-black text-brand-primary uppercase tracking-[0.3em] bg-brand-primary/10 px-3 py-1.5 rounded-full border border-brand-primary/20">
+                    JOIN THE ELITE
+                  </span>
+                  <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9] italic font-display">
+                    ELEVATE YOUR <br />
+                    <span className="text-brand-primary">GAMING STATUS</span>
+                  </h2>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {[
+                    { icon: ShieldCheck, text: 'SECURE ACCOUNT ACCESS' },
+                    { icon: Zap, text: 'INSTANT TOP-UP DELIVERY' },
+                    { icon: Star, text: 'EXCLUSIVE ELITE DISCOUNTS' },
+                    { icon: ShoppingBag, text: 'FULL ORDER HISTORY' },
+                  ].map((benefit, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                        <benefit.icon className="w-4 h-4 text-brand-primary" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{benefit.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
+                  <Link 
+                    to="/auth" 
+                    className="btn-primary px-12 py-6 rounded-2xl flex items-center gap-4 group w-fit"
+                  >
+                    <span className="font-black tracking-widest text-xs">CREATE ACCOUNT NOW</span>
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="hidden lg:block relative">
+                <div className="absolute -inset-10 bg-brand-primary/20 blur-[100px] rounded-full" />
+                <div className="glass-card p-4 rounded-[2.5rem] transform rotate-3 hover:rotate-0 transition-transform duration-700">
+                  <img 
+                    src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=800" 
+                    alt="Gaming Community"
+                    className="rounded-[2rem] shadow-2xl w-full h-[400px] object-cover"
+                  />
+                  <div className="absolute -bottom-6 -right-6 bg-surface p-6 rounded-[2rem] border border-white/5 shadow-2xl max-w-[200px]">
+                    <div className="flex -space-x-2 mb-3">
+                       {[1,2,3,4].map(i => (
+                         <div key={i} className="w-8 h-8 rounded-full border-2 border-surface bg-brand-primary/20 flex items-center justify-center font-black text-[10px]">
+                           {i}
+                         </div>
+                       ))}
+                       <div className="w-8 h-8 rounded-full border-2 border-surface bg-brand-primary flex items-center justify-center font-black text-[10px]">
+                         +
+                       </div>
+                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-widest leading-tight">
+                      JOIN 500,000+ <span className="text-brand-primary">ACTIVE GAMERS</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* How it Works */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16 space-y-4">
           <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter font-display">HOW TO TOP-UP</h2>
@@ -219,7 +288,6 @@ export function Home() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
-          {/* Connecting Line (Desktop) */}
           <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-primary/20 to-transparent -z-10" />
           
           {[
@@ -297,7 +365,6 @@ export function Home() {
       {/* Trust & Community */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Live Orders Banner */}
           <div className="glass-card group p-2 rounded-[2rem] flex items-center overflow-hidden border-white/10 hover:border-brand-primary/30 transition-all bg-brand-primary/5">
             <div className="bg-brand-primary/10 text-brand-primary px-8 py-5 font-black text-[10px] uppercase tracking-[0.2em] border-r border-white/10 flex items-center gap-3">
               <span className="relative flex h-2 w-2">
@@ -320,7 +387,6 @@ export function Home() {
                   </div>
                 ))}
               </motion.div>
-              {/* Fade masks */}
               <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-bg-dark to-transparent z-10" />
               <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-bg-dark to-transparent z-10" />
             </div>
@@ -344,7 +410,6 @@ export function Home() {
           </div>
         </div>
       </section>
-
     </motion.div>
   );
 }
