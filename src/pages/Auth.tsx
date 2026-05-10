@@ -31,16 +31,22 @@ export function Auth() {
     }
 
     if (!isSupabaseConfigured) {
-      toast.success('Local Password updated successfully! (Demo Mode)');
-      const savedUser = JSON.parse(localStorage.getItem('zus_user') || '{}');
+      // Find the user we're resetting for from our demo state
+      const resetEmail = localStorage.getItem('zus_reset_email');
       const allUsers = JSON.parse(localStorage.getItem('zus_all_users') || '[]');
       
-      const updatedUser = { ...savedUser, password };
-      const updatedAll = allUsers.map((u: any) => u.email === savedUser.email ? { ...u, password } : u);
-      
-      localStorage.setItem('zus_user', JSON.stringify(updatedUser));
+      if (!resetEmail) {
+        toast.error('Session expired. Please request reset again.');
+        setIsResetSession(false);
+        setIsLogin(true);
+        return;
+      }
+
+      const updatedAll = allUsers.map((u: any) => u.email === resetEmail ? { ...u, password } : u);
       localStorage.setItem('zus_all_users', JSON.stringify(updatedAll));
+      localStorage.removeItem('zus_reset_email');
       
+      toast.success('Password updated successfully! (Local Data)');
       setIsResetSession(false);
       setIsLogin(true);
       navigate('/auth');
@@ -86,6 +92,8 @@ export function Auth() {
     const user = allUsers.find((u: any) => u.email === email);
 
     if (user) {
+      toast.success('Reset request sent! (Local Mode)');
+      
       // Final Fallback: Notify Admin via Telegram
       const botToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
       const chatIds = [
@@ -115,13 +123,15 @@ Please contact the user or verify the request.
             console.error('Telegram reset notification failed', err);
           }
         }
-        toast.success('Admin notified via Telegram! They will contact you shortly.', { duration: 6000 });
-      } else {
-        toast.error('Recovery service unavailable. Please contact support.');
       }
 
-      setIsForgotPassword(false);
-      setIsLogin(true);
+      // For local mode, we simulate the "redirect to reset form"
+      setTimeout(() => {
+        setIsForgotPassword(false);
+        setIsResetSession(true);
+        // Store which user we are resetting for demo purposes
+        localStorage.setItem('zus_reset_email', email);
+      }, 1500);
     } else {
       toast.error('No account found with this email.');
     }

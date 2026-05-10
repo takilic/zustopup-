@@ -17,8 +17,17 @@ export function GameDetail() {
   const [gamePackages, setGamePackages] = useState<any[]>([]);
   const [gameInfo, setGameInfo] = useState<any>(null);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
+    const savedUser = localStorage.getItem('zus_user');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.isLoggedIn) setUser(parsed);
+      } catch (e) {}
+    }
+
     const loadData = async () => {
       // 1. Load Game Info
       let foundGame = null;
@@ -186,19 +195,26 @@ Check Admin Dashboard for details.
   };
 
   const handleCheckout = () => {
+    if (!user) {
+      toast.error('Please login to place an order');
+      navigate('/auth', { state: { from: `/game/${id}` } });
+      return;
+    }
     if (!playerId) return toast.error('Please enter your Player ID');
     if (!selectedPackage) return toast.error('Please select a package');
     setStep(2);
   };
 
   const handlePayment = () => {
+    if (!user) {
+      toast.error('Session expired. Please login again.');
+      navigate('/auth');
+      return;
+    }
     if (!paymentMethod) return toast.error('Please select a payment method');
     if (!transactionId) return toast.error('Please enter the Transaction ID');
     
     // Create real order object
-    const savedUser = localStorage.getItem('zus_user');
-    const user = savedUser ? JSON.parse(savedUser) : null;
-
     const selectedPkg = selectedPackage ? gamePackages.find(p => p.id === selectedPackage) : null;
     const newOrder = {
       id: `ZUS-${Math.floor(Math.random() * 90000) + 10000}`,
@@ -210,7 +226,7 @@ Check Admin Dashboard for details.
       playerId,
       transactionId,
       paymentMethod: paymentMethod?.name || 'Unknown',
-      userEmail: user?.email || 'guest@example.com'
+      userEmail: user.email
     };
 
     // Save to localStorage (and Supabase if configured)
@@ -222,7 +238,7 @@ Check Admin Dashboard for details.
       supabase
         .from('orders')
         .insert([{
-          user_id: user?.id || 'guest',
+          user_id: user.id || user.uid || 'unknown',
           game_name: gameInfo.name,
           player_id: playerId,
           package_id: selectedPkg?.id || 'unknown',

@@ -48,8 +48,13 @@ export function AdminDashboard() {
   const [paymentLogoPreview, setPaymentLogoPreview] = useState<string | null>(null);
   const [packageFilter, setPackageFilter] = useState('All Games');
   const [packageSearchQuery, setPackageSearchQuery] = useState('');
+  const [orderSortConfig, setOrderSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'id', direction: 'desc' });
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [orderGameFilter, setOrderGameFilter] = useState('all');
   const [userSortConfig, setUserSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'joinedAt', direction: 'desc' });
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
 
   useEffect(() => {
     const checkAuth = () => {
@@ -348,21 +353,74 @@ export function AdminDashboard() {
     setUserSortConfig({ key, direction });
   };
 
-  const getSortIcon = (key: string) => {
-    if (!userSortConfig || userSortConfig.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-20" />;
-    return userSortConfig.direction === 'asc' 
+  const handleOrderSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (orderSortConfig && orderSortConfig.key === key && orderSortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setOrderSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string, config: any) => {
+    if (!config || config.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-20" />;
+    return config.direction === 'asc' 
       ? <ArrowUp className="w-3 h-3 ml-1 text-brand-primary" /> 
       : <ArrowDown className="w-3 h-3 ml-1 text-brand-primary" />;
   };
 
+  const filteredAndSortedOrders = [...orders]
+    .filter(order => {
+      const query = orderSearchQuery.toLowerCase();
+      const matchesSearch = (
+        order.id.toLowerCase().includes(query) ||
+        (order.userEmail && order.userEmail.toLowerCase().includes(query)) ||
+        order.game.toLowerCase().includes(query) ||
+        (order.playerId && order.playerId.toLowerCase().includes(query))
+      );
+      
+      const matchesStatus = orderStatusFilter === 'all' || order.status === orderStatusFilter;
+      const matchesGame = orderGameFilter === 'all' || order.game.toLowerCase() === orderGameFilter.toLowerCase();
+      
+      return matchesSearch && matchesStatus && matchesGame;
+    })
+    .sort((a, b) => {
+      if (!orderSortConfig) return 0;
+      const { key, direction } = orderSortConfig;
+      
+      let valA = a[key] || '';
+      let valB = b[key] || '';
+      
+      if (key === 'price' || key === 'amount') {
+        valA = Number(valA);
+        valB = Number(valB);
+      } else if (key === 'id' && a.createdAt && b.createdAt) {
+        // Use createdAt for better date sorting if available
+        valA = new Date(a.createdAt).getTime();
+        valB = new Date(b.createdAt).getTime();
+      } else {
+        valA = valA.toString().toLowerCase();
+        valB = valB.toString().toLowerCase();
+      }
+
+      if (valA < valB) return direction === 'asc' ? -1 : 1;
+      if (valA > valB) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
   const filteredAndSortedUsers = [...users]
     .filter(user => {
       const query = userSearchQuery.toLowerCase();
-      return (
+      const matchesSearch = (
         user.name.toLowerCase().includes(query) ||
         user.email.toLowerCase().includes(query) ||
         (user.id && user.id.toLowerCase().includes(query))
       );
+
+      const matchesRole = userRoleFilter === 'all' || 
+        (userRoleFilter === 'admin' && user.isAdmin) || 
+        (userRoleFilter === 'user' && !user.isAdmin);
+
+      return matchesSearch && matchesRole;
     })
     .sort((a, b) => {
       if (!userSortConfig) return 0;
@@ -372,8 +430,8 @@ export function AdminDashboard() {
       let valB = b[key] || '';
       
       if (key === 'joinedAt') {
-        valA = new Date(valA).getTime();
-        valB = new Date(valB).getTime();
+        valA = new Date(valA || 0).getTime();
+        valB = new Date(valB || 0).getTime();
       } else {
         valA = valA.toString().toLowerCase();
         valB = valB.toString().toLowerCase();
@@ -903,17 +961,43 @@ export function AdminDashboard() {
                 <ShoppingBag className="w-6 h-6 text-brand-primary" />
                 ORDER MANAGEMENT
               </h3>
-              <div className="flex gap-4">
-                <div className="relative w-full md:w-80">
+              <div className="flex flex-wrap gap-4">
+                <div className="relative w-full md:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                  <input type="text" placeholder="Search ID, Player, or Game..." className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-brand-primary" />
+                  <input 
+                    type="text" 
+                    placeholder="Search ID, Player, or Game..." 
+                    value={orderSearchQuery}
+                    onChange={(e) => setOrderSearchQuery(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-brand-primary" 
+                  />
                 </div>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 transition-all"
-                >
-                  Refresh Data
-                </button>
+                <div className="relative w-full md:w-40">
+                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                  <select 
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-brand-primary appearance-none"
+                  >
+                    <option value="all" className="bg-bg-dark">All Status</option>
+                    <option value="pending" className="bg-bg-dark">Pending</option>
+                    <option value="completed" className="bg-bg-dark">Completed</option>
+                    <option value="cancelled" className="bg-bg-dark">Cancelled</option>
+                  </select>
+                </div>
+                <div className="relative w-full md:w-48">
+                  <Gamepad2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                  <select 
+                    value={orderGameFilter}
+                    onChange={(e) => setOrderGameFilter(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-brand-primary appearance-none"
+                  >
+                    <option value="all" className="bg-bg-dark">All Games</option>
+                    {gamesList.map(g => (
+                      <option key={g.id} value={g.name} className="bg-bg-dark">{g.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -922,22 +1006,46 @@ export function AdminDashboard() {
                 <table className="w-full text-left">
                   <thead className="bg-white/5 border-b border-white/10">
                     <tr>
-                      <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Order / Game</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Player & Payment</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Status</th>
+                      <th 
+                        className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleOrderSort('game')}
+                      >
+                        <div className="flex items-center">
+                          Order / Game
+                          {getSortIcon('game', orderSortConfig)}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleOrderSort('userEmail')}
+                      >
+                        <div className="flex items-center">
+                          Player & Payment
+                          {getSortIcon('userEmail', orderSortConfig)}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleOrderSort('status')}
+                      >
+                        <div className="flex items-center justify-center">
+                          Status
+                          {getSortIcon('status', orderSortConfig)}
+                        </div>
+                      </th>
                       <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {orders.length === 0 ? (
+                    {filteredAndSortedOrders.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="px-4 py-32 text-center">
                           <ShoppingBag className="w-12 h-12 text-white/5 mx-auto mb-4" />
-                          <p className="text-gray-500 font-medium tracking-tight">No orders received yet.</p>
+                          <p className="text-gray-500 font-medium tracking-tight">No orders found.</p>
                         </td>
                       </tr>
                     ) : (
-                      orders.map((order) => (
+                      filteredAndSortedOrders.map((order) => (
                         <tr key={order.id} className="hover:bg-white/[0.02] transition-all group">
                           <td className="px-4 py-6">
                             <div className="flex flex-col">
@@ -1035,15 +1143,29 @@ export function AdminDashboard() {
             <div className="glass-card overflow-hidden">
               <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-xl font-bold">User Management</h3>
-                <div className="relative w-full md:w-96">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                  <input 
-                    type="text" 
-                    placeholder="Search by name, email or UID..." 
-                    value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="w-full bg-white/5 border border-white/5 rounded-lg pl-10 pr-4 py-2 text-sm outline-none focus:border-brand-primary/50" 
-                  />
+                <div className="flex flex-wrap gap-4 w-full md:w-auto">
+                  <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                    <input 
+                      type="text" 
+                      placeholder="Search by name, email or UID..." 
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="w-full bg-white/5 border border-white/5 rounded-lg pl-10 pr-4 py-2 text-sm outline-none focus:border-brand-primary/50" 
+                    />
+                  </div>
+                  <div className="relative w-full md:w-40">
+                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                    <select 
+                      value={userRoleFilter}
+                      onChange={(e) => setUserRoleFilter(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm outline-none focus:border-brand-primary appearance-none"
+                    >
+                      <option value="all" className="bg-bg-dark">All Roles</option>
+                      <option value="admin" className="bg-bg-dark">Admins</option>
+                      <option value="user" className="bg-bg-dark">Users</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               
@@ -1057,7 +1179,7 @@ export function AdminDashboard() {
                       >
                         <div className="flex items-center">
                           User Info
-                          {getSortIcon('name')}
+                          {getSortIcon('name', userSortConfig)}
                         </div>
                       </th>
                       <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Role</th>
@@ -1068,7 +1190,7 @@ export function AdminDashboard() {
                       >
                         <div className="flex items-center justify-center">
                           Joined At
-                          {getSortIcon('joinedAt')}
+                          {getSortIcon('joinedAt', userSortConfig)}
                         </div>
                       </th>
                       <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>

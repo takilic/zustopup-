@@ -6,6 +6,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { ScrollToTop } from './components/ScrollToTop';
 import { Home } from './pages/Home';
 import { GameDetail } from './pages/GameDetail';
 import { Dashboard } from './pages/Dashboard';
@@ -17,6 +18,7 @@ import { AnimatePresence } from 'motion/react';
 export default function App() {
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen flex flex-col relative overflow-hidden">
         {/* Background Ambient Effects */}
         <div className="fixed inset-0 pointer-events-none z-0">
