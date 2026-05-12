@@ -268,6 +268,11 @@ export function AdminDashboard() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit for localStorage safety
+        toast.error('Image is too large (max 1MB). Please use a smaller image.');
+        e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
@@ -279,6 +284,11 @@ export function AdminDashboard() {
   const handlePaymentLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 1024 * 1024) {
+        toast.error('Image is too large (max 1MB).');
+        e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setPaymentLogoPreview(reader.result as string);
@@ -289,31 +299,38 @@ export function AdminDashboard() {
 
   const handleSavePaymentMethod = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const payData = {
-      id: editingPayment?.id || Date.now().toString(),
-      name: formData.get('name'),
-      number: formData.get('number'),
-      apiKey: formData.get('apiKey'),
-      status: formData.get('status'),
-      color: formData.get('color') || '#FF5A1F',
-      logo: paymentLogoPreview || editingPayment?.logo || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop'
-    };
+    try {
+      const formData = new FormData(e.currentTarget);
+      const payData = {
+        id: editingPayment?.id || Date.now().toString(),
+        name: formData.get('name'),
+        number: formData.get('number'),
+        apiKey: formData.get('apiKey'),
+        status: formData.get('status'),
+        color: formData.get('color') || '#FF5A1F',
+        logo: paymentLogoPreview || editingPayment?.logo || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop'
+      };
 
-    let updatedPayments;
-    if (editingPayment) {
-      updatedPayments = paymentMethods.map(p => p.id === editingPayment.id ? payData : p);
-      toast.success('Payment method updated');
-    } else {
-      updatedPayments = [...paymentMethods, payData];
-      toast.success('Payment method added');
+      let updatedPayments;
+      if (editingPayment) {
+        updatedPayments = paymentMethods.map(p => p.id === editingPayment.id ? payData : p);
+      } else {
+        updatedPayments = [...paymentMethods, payData];
+      }
+
+      localStorage.setItem('zus_payment_methods', JSON.stringify(updatedPayments));
+      setPaymentMethods(updatedPayments);
+      setEditingPayment(null);
+      setIsAddingPayment(false);
+      setPaymentLogoPreview(null);
+      toast.success(editingPayment ? 'Payment method updated' : 'Payment method added');
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        toast.error('Storage full! Please use a smaller image or delete old data.');
+      } else {
+        toast.error('Failed to save payment method');
+      }
     }
-
-    localStorage.setItem('zus_payment_methods', JSON.stringify(updatedPayments));
-    setPaymentMethods(updatedPayments);
-    setEditingPayment(null);
-    setIsAddingPayment(false);
-    setPaymentLogoPreview(null);
   };
 
   const handleDeletePaymentMethod = (id: string) => {
@@ -327,38 +344,45 @@ export function AdminDashboard() {
 
   const handleSaveGame = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const id = editingGame?.id || (formData.get('name') as string).toLowerCase().replace(/\s+/g, '-');
-    
-    // Check if ID exists for new games
-    if (!editingGame && gamesList.find(g => g.id === id)) {
-      toast.error('A game with this name/ID already exists');
-      return;
+    try {
+      const formData = new FormData(e.currentTarget);
+      const id = editingGame?.id || (formData.get('name') as string).toLowerCase().replace(/\s+/g, '-');
+      
+      // Check if ID exists for new games
+      if (!editingGame && gamesList.find(g => g.id === id)) {
+        toast.error('A game with this name/ID already exists');
+        return;
+      }
+
+      const gameData = {
+        id,
+        name: formData.get('name'),
+        category: formData.get('category'),
+        tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
+        icon: formData.get('icon') || '🎮',
+        image: logoPreview || editingGame?.image || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop'
+      };
+
+      let updatedGames;
+      if (editingGame) {
+        updatedGames = gamesList.map(g => g.id === editingGame.id ? gameData : g);
+      } else {
+        updatedGames = [...gamesList, gameData];
+      }
+
+      localStorage.setItem('zus_games', JSON.stringify(updatedGames));
+      setGamesList(updatedGames);
+      setEditingGame(null);
+      setIsAddingGame(false);
+      setLogoPreview(null);
+      toast.success(editingGame ? 'Game updated successfully' : 'Game added successfully');
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        toast.error('Storage full! Image might be too large.');
+      } else {
+        toast.error('Failed to save game');
+      }
     }
-
-    const gameData = {
-      id,
-      name: formData.get('name'),
-      category: formData.get('category'),
-      tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
-      icon: formData.get('icon') || '🎮',
-      image: logoPreview || editingGame?.image || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop'
-    };
-
-    let updatedGames;
-    if (editingGame) {
-      updatedGames = gamesList.map(g => g.id === editingGame.id ? gameData : g);
-      toast.success('Game updated successfully');
-    } else {
-      updatedGames = [...gamesList, gameData];
-      toast.success('Game added successfully');
-    }
-
-    localStorage.setItem('zus_games', JSON.stringify(updatedGames));
-    setGamesList(updatedGames);
-    setEditingGame(null);
-    setIsAddingGame(false);
-    setLogoPreview(null);
   };
 
   const handleDeleteGame = (id: string) => {
@@ -370,29 +394,36 @@ export function AdminDashboard() {
 
   const handleSavePackage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const pkgData = {
-      id: editingPackage?.id || Date.now().toString(),
-      gameId: formData.get('gameId'),
-      label: formData.get('label'),
-      amount: parseInt(formData.get('amount') as string) || 0,
-      price: parseInt(formData.get('price') as string),
-      bonus: formData.get('bonus'),
-    };
+    try {
+      const formData = new FormData(e.currentTarget);
+      const pkgData = {
+        id: editingPackage?.id || Date.now().toString(),
+        gameId: formData.get('gameId'),
+        label: formData.get('label'),
+        amount: parseInt(formData.get('amount') as string) || 0,
+        price: parseInt(formData.get('price') as string),
+        bonus: formData.get('bonus'),
+      };
 
-    let updatedPackages;
-    if (editingPackage) {
-      updatedPackages = packages.map(p => p.id === editingPackage.id ? pkgData : p);
-      toast.success('Package updated successfully');
-    } else {
-      updatedPackages = [pkgData, ...packages];
-      toast.success('Package added successfully');
+      let updatedPackages;
+      if (editingPackage) {
+        updatedPackages = packages.map(p => p.id === editingPackage.id ? pkgData : p);
+      } else {
+        updatedPackages = [pkgData, ...packages];
+      }
+
+      localStorage.setItem('zus_packages', JSON.stringify(updatedPackages));
+      setPackages(updatedPackages);
+      setEditingPackage(null);
+      setIsAddingPackage(false);
+      toast.success(editingPackage ? 'Package updated successfully' : 'Package added successfully');
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        toast.error('Storage full! Data could not be saved.');
+      } else {
+        toast.error('Failed to save package');
+      }
     }
-
-    localStorage.setItem('zus_packages', JSON.stringify(updatedPackages));
-    setPackages(updatedPackages);
-    setEditingPackage(null);
-    setIsAddingPackage(false);
   };
 
   const handleDeletePackage = (id: string) => {
@@ -406,26 +437,34 @@ export function AdminDashboard() {
 
   const handleSaveSocial = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const socialData = {
-      id: editingSocial?.id || Date.now().toString(),
-      platform: formData.get('platform'),
-      url: formData.get('url'),
-      icon: formData.get('icon') || 'Globe'
-    };
+    try {
+      const formData = new FormData(e.currentTarget);
+      const socialData = {
+        id: editingSocial?.id || Date.now().toString(),
+        platform: formData.get('platform'),
+        url: formData.get('url'),
+        icon: formData.get('icon') || 'Globe'
+      };
 
-    let updated;
-    if (editingSocial) {
-      updated = socialLinks.map(s => s.id === editingSocial.id ? socialData : s);
-    } else {
-      updated = [...socialLinks, socialData];
+      let updated;
+      if (editingSocial) {
+        updated = socialLinks.map(s => s.id === editingSocial.id ? socialData : s);
+      } else {
+        updated = [...socialLinks, socialData];
+      }
+
+      localStorage.setItem('zus_socials', JSON.stringify(updated));
+      setSocialLinks(updated);
+      setEditingSocial(null);
+      setIsAddingSocial(false);
+      toast.success('Social link saved');
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        toast.error('Storage full!');
+      } else {
+        toast.error('Failed to save social link');
+      }
     }
-
-    localStorage.setItem('zus_socials', JSON.stringify(updated));
-    setSocialLinks(updated);
-    setEditingSocial(null);
-    setIsAddingSocial(false);
-    toast.success('Social link saved');
   };
 
   const handleDeleteSocial = (id: string) => {
@@ -437,20 +476,27 @@ export function AdminDashboard() {
 
   const handleSaveSupport = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    // Handle FAQs separately if needed, but for now just basic info
-    const newSupport = {
-      ...supportData,
-      title: formData.get('title'),
-      description: formData.get('description'),
-      telegram: formData.get('telegram'),
-      whatsapp: formData.get('whatsapp')
-    };
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      const newSupport = {
+        ...supportData,
+        title: formData.get('title'),
+        description: formData.get('description'),
+        telegram: formData.get('telegram'),
+        whatsapp: formData.get('whatsapp')
+      };
 
-    localStorage.setItem('zus_support', JSON.stringify(newSupport));
-    setSupportData(newSupport);
-    toast.success('Support settings updated');
+      localStorage.setItem('zus_support', JSON.stringify(newSupport));
+      setSupportData(newSupport);
+      toast.success('Support settings updated');
+    } catch (error: any) {
+      if (error.name === 'QuotaExceededError') {
+        toast.error('Storage full!');
+      } else {
+        toast.error('Failed to save support settings');
+      }
+    }
   };
 
   const handleAddFAQ = () => {

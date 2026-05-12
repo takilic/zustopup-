@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Gamepad2, User, LayoutDashboard, LogIn, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -9,15 +9,27 @@ export function Navbar() {
   const location = useLocation();
   
   // Load auth state from localStorage
-  const savedUser = localStorage.getItem('zus_user');
-  let user = null;
-  if (savedUser) {
-    try {
-      user = JSON.parse(savedUser);
-    } catch (e) {
-      localStorage.removeItem('zus_user');
-    }
-  }
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const loadUser = () => {
+      const savedUser = localStorage.getItem('zus_user');
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          localStorage.removeItem('zus_user');
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    loadUser();
+    window.addEventListener('storage', loadUser);
+    return () => window.removeEventListener('storage', loadUser);
+  }, []);
   
   const isLoggedIn = !!user; 
   const isAdmin = user?.isAdmin || false;
@@ -65,7 +77,11 @@ export function Navbar() {
                   </Link>
                 )}
                 <Link to="/dashboard" className="btn-primary flex items-center gap-2 !py-2 !px-5 text-xs font-black uppercase tracking-widest">
-                  <User className="w-4 h-4" />
+                  {user?.avatar ? (
+                    <img src={user.avatar} className="w-5 h-5 rounded-full object-cover border border-white/20" alt="Avatar" />
+                  ) : (
+                    <User className="w-4 h-4" />
+                  )}
                   My Dashboard
                 </Link>
               </div>
@@ -117,7 +133,11 @@ export function Navbar() {
                     onClick={() => setIsOpen(false)}
                     className="btn-primary w-full flex items-center justify-center gap-2 font-black uppercase text-xs"
                   >
-                    <User className="w-5 h-5" />
+                    {user?.avatar ? (
+                      <img src={user.avatar} className="w-6 h-6 rounded-full object-cover" alt="Avatar" />
+                    ) : (
+                      <User className="w-5 h-5" />
+                    )}
                     My Dashboard
                   </Link>
                   {isAdmin && (

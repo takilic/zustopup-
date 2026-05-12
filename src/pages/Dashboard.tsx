@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { User, Clock, ShoppingBag, Settings, LogOut, CheckCircle2, TrendingUp, Star } from 'lucide-react';
@@ -16,12 +16,49 @@ export function Dashboard() {
   const [userProfile, setUserProfile] = useState({
     id: '',
     name: 'Gamer User',
-    email: 'user@example.com'
+    email: 'user@example.com',
+    avatar: ''
   });
 
   const [profileForm, setProfileForm] = useState({
     name: '',
   });
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) {
+        toast.error('Image is too large (max 1MB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        try {
+          const base64 = reader.result as string;
+          const updatedUser = { ...userProfile, avatar: base64 };
+          localStorage.setItem('zus_user', JSON.stringify(updatedUser));
+          
+          // Also update in all_users so it persists across logins
+          const allUsersRaw = localStorage.getItem('zus_all_users');
+          if (allUsersRaw) {
+            const allUsers = JSON.parse(allUsersRaw);
+            const updatedAll = allUsers.map((u: any) => u.email === userProfile.email ? { ...u, avatar: base64 } : u);
+            localStorage.setItem('zus_all_users', JSON.stringify(updatedAll));
+          }
+          
+          setUserProfile(updatedUser);
+          toast.success('Profile picture updated!');
+        } catch (error: any) {
+          if (error.name === 'QuotaExceededError') {
+            toast.error('Storage full! Image might be too large.');
+          } else {
+            toast.error('Failed to update avatar');
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     // Load user from localStorage
@@ -153,8 +190,12 @@ export function Dashboard() {
         <div className="lg:col-span-1 space-y-6">
           <div className="glass-card p-6 text-center">
             <div className="relative w-24 h-24 mx-auto mb-4">
-              <div className="w-full h-full rounded-full border-2 border-brand-primary p-1 bg-surface flex items-center justify-center font-black text-2xl text-brand-primary">
-                {nameInitials}
+              <div className="w-full h-full rounded-full border-2 border-brand-primary p-1 bg-surface flex items-center justify-center font-black text-2xl text-brand-primary overflow-hidden">
+                {userProfile.avatar ? (
+                  <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  nameInitials
+                )}
               </div>
               <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-2 border-surface rounded-full" />
             </div>
@@ -335,12 +376,24 @@ export function Dashboard() {
               <div className="glass-card p-8 space-y-8">
                 <div className="flex items-center gap-6 pb-8 border-b border-white/5">
                   <div className="relative group">
-                    <div className="w-24 h-24 rounded-full border-2 border-brand-primary p-1 bg-surface flex items-center justify-center font-black text-2xl text-brand-primary overflow-hidden">
-                      {nameInitials}
-                    </div>
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer rounded-full">
-                       <p className="text-[10px] font-black tracking-tighter text-white">UPDATE</p>
-                    </div>
+                    <label className="cursor-pointer block">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleAvatarChange}
+                      />
+                      <div className="w-24 h-24 rounded-full border-2 border-brand-primary p-1 bg-surface flex items-center justify-center font-black text-2xl text-brand-primary overflow-hidden">
+                        {userProfile.avatar ? (
+                          <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          nameInitials
+                        )}
+                      </div>
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer rounded-full">
+                         <p className="text-[10px] font-black tracking-tighter text-white">UPDATE</p>
+                      </div>
+                    </label>
                   </div>
                   <div>
                     <h3 className="text-xl font-bold uppercase">{userProfile.name}</h3>

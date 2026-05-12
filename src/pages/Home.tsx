@@ -79,6 +79,8 @@ export function Home() {
     };
 
     loadGames();
+    window.addEventListener('storage', loadGames);
+    return () => window.removeEventListener('storage', loadGames);
   }, []);
 
   return (
