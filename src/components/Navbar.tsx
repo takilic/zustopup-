@@ -10,7 +10,14 @@ export function Navbar() {
   
   // Load auth state from localStorage
   const savedUser = localStorage.getItem('zus_user');
-  const user = savedUser ? JSON.parse(savedUser) : null;
+  let user = null;
+  if (savedUser) {
+    try {
+      user = JSON.parse(savedUser);
+    } catch (e) {
+      localStorage.removeItem('zus_user');
+    }
+  }
   
   const isLoggedIn = !!user; 
   const isAdmin = user?.isAdmin || false;
@@ -51,13 +58,21 @@ export function Navbar() {
             ))}
             
             {isLoggedIn ? (
-              <Link to="/dashboard" className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center hover:border-brand-primary transition-colors">
-                <User className="w-5 h-5 text-gray-400" />
-              </Link>
+              <div className="flex items-center gap-4">
+                {isAdmin && (
+                  <Link to="/admin" className="text-xs font-black uppercase text-brand-primary hover:underline hidden sm:block">
+                    Admin Portal
+                  </Link>
+                )}
+                <Link to="/dashboard" className="btn-primary flex items-center gap-2 !py-2 !px-5 text-xs font-black uppercase tracking-widest">
+                  <User className="w-4 h-4" />
+                  My Dashboard
+                </Link>
+              </div>
             ) : (
-              <Link to="/auth" className="btn-primary flex items-center gap-2 !py-2 !px-5 text-sm">
-                <LogIn className="w-4 h-4 text-white" />
-                Sign In
+              <Link to="/auth" state={{ mode: 'signup' }} className="btn-primary flex items-center gap-2 !py-2 !px-5 text-xs font-black uppercase tracking-widest">
+                <User className="w-4 h-4 text-white" />
+                Account Create
               </Link>
             )}
           </div>
@@ -95,14 +110,35 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              {!isLoggedIn && (
+              {isLoggedIn ? (
+                <div className="space-y-2">
+                   <Link
+                    to="/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="btn-primary w-full flex items-center justify-center gap-2 font-black uppercase text-xs"
+                  >
+                    <User className="w-5 h-5" />
+                    My Dashboard
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 font-black uppercase text-xs text-brand-primary py-2"
+                    >
+                      Admin Portal
+                    </Link>
+                  )}
+                </div>
+              ) : (
                 <Link
                   to="/auth"
+                  state={{ mode: 'signup' }}
                   onClick={() => setIsOpen(false)}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
+                  className="btn-primary w-full flex items-center justify-center gap-2 font-black uppercase text-xs"
                 >
-                  <LogIn className="w-5 h-5" />
-                  Sign In
+                  <User className="w-5 h-5" />
+                  Account Create
                 </Link>
               )}
             </div>

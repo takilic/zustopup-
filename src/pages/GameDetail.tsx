@@ -64,7 +64,8 @@ export function GameDetail() {
         let allGames = defaultGamesList;
         if (savedGames) {
           try {
-            allGames = JSON.parse(savedGames);
+            const parsed = JSON.parse(savedGames);
+            if (Array.isArray(parsed)) allGames = parsed;
           } catch (e) {}
         }
 
@@ -230,7 +231,13 @@ Check Admin Dashboard for details.
     };
 
     // Save to localStorage (and Supabase if configured)
-    const existingOrders = JSON.parse(localStorage.getItem('zus_orders') || '[]');
+    let existingOrders = [];
+    try {
+      existingOrders = JSON.parse(localStorage.getItem('zus_orders') || '[]');
+      if (!Array.isArray(existingOrders)) existingOrders = [];
+    } catch (e) {
+      existingOrders = [];
+    }
     localStorage.setItem('zus_orders', JSON.stringify([newOrder, ...existingOrders]));
 
     if (isSupabaseConfigured) {

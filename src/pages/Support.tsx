@@ -10,7 +10,17 @@ export function Support() {
   useEffect(() => {
     const saved = localStorage.getItem('zus_support');
     if (saved) {
-      setSupportData(JSON.parse(saved));
+      try {
+        setSupportData(JSON.parse(saved));
+      } catch (e) {
+        setSupportData({
+          title: 'ZUS SUPPORT CENTER',
+          description: 'We are here to help you 24/7 with any issues.',
+          telegram: '@zustopup',
+          whatsapp: '+8801700000000',
+          faqs: []
+        });
+      }
     } else {
       // Fallback default
       setSupportData({

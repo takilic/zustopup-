@@ -38,7 +38,12 @@ export function Auth() {
     if (!isSupabaseConfigured) {
       // Find the user we're resetting for from our demo state
       const resetEmail = localStorage.getItem('zus_reset_email');
-      const allUsers = JSON.parse(localStorage.getItem('zus_all_users') || '[]');
+      let allUsers = [];
+      try {
+        allUsers = JSON.parse(localStorage.getItem('zus_all_users') || '[]');
+      } catch (e) {
+        allUsers = [];
+      }
       
       if (!resetEmail) {
         toast.error('Session expired. Please request reset again.');
@@ -93,7 +98,12 @@ export function Auth() {
       }
     }
 
-    const allUsers = JSON.parse(localStorage.getItem('zus_all_users') || '[]');
+    let allUsers = [];
+    try {
+      allUsers = JSON.parse(localStorage.getItem('zus_all_users') || '[]');
+    } catch (e) {
+      allUsers = [];
+    }
     const user = allUsers.find((u: any) => u.email === email);
 
     if (user) {
@@ -228,7 +238,12 @@ Please contact the user or verify the request.
     }
 
     // Fallback/Legacy localStorage logic
-    const allUsers = JSON.parse(localStorage.getItem('zus_all_users') || '[]');
+    let allUsers = [];
+    try {
+      allUsers = JSON.parse(localStorage.getItem('zus_all_users') || '[]');
+    } catch (e) {
+      allUsers = [];
+    }
 
     if (isLogin) {
       // Find user and check password

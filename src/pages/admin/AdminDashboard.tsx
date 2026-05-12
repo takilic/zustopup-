@@ -168,7 +168,11 @@ export function AdminDashboard() {
 
       const savedSocials = localStorage.getItem('zus_socials');
       if (savedSocials) {
-        setSocialLinks(JSON.parse(savedSocials));
+        try {
+          setSocialLinks(JSON.parse(savedSocials));
+        } catch (e) {
+          setSocialLinks([]);
+        }
       } else {
         const defaultSocials = [
           { id: '1', platform: 'Facebook', url: '#', icon: 'Facebook' },
@@ -181,7 +185,11 @@ export function AdminDashboard() {
 
       const savedSupport = localStorage.getItem('zus_support');
       if (savedSupport) {
-        setSupportData(JSON.parse(savedSupport));
+        try {
+          setSupportData(JSON.parse(savedSupport));
+        } catch (e) {
+          setSupportData(null);
+        }
       } else {
         const defaultSupport = {
           title: 'ZUS SUPPORT CENTER',
@@ -236,7 +244,13 @@ export function AdminDashboard() {
   const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
     try {
       const rawOrders = localStorage.getItem('zus_orders');
-      const currentOrders = rawOrders ? JSON.parse(rawOrders) : [];
+      let currentOrders = [];
+      try {
+        currentOrders = rawOrders ? JSON.parse(rawOrders) : [];
+        if (!Array.isArray(currentOrders)) currentOrders = [];
+      } catch (e) {
+        currentOrders = [];
+      }
       
       const updatedOrders = currentOrders.map((o: any) => 
         String(o.id) === String(orderId) ? { ...o, status: newStatus } : o
@@ -504,10 +518,9 @@ export function AdminDashboard() {
       if (key === 'price' || key === 'amount') {
         valA = Number(valA);
         valB = Number(valB);
-      } else if (key === 'id' && a.createdAt && b.createdAt) {
-        // Use createdAt for better date sorting if available
-        valA = new Date(a.createdAt).getTime();
-        valB = new Date(b.createdAt).getTime();
+      } else if (key === 'date' || key === 'createdAt') {
+        valA = new Date(valA || 0).getTime();
+        valB = new Date(valB || 0).getTime();
       } else {
         valA = valA.toString().toLowerCase();
         valB = valB.toString().toLowerCase();
@@ -1199,6 +1212,24 @@ export function AdminDashboard() {
                       </th>
                       <th 
                         className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleOrderSort('date')}
+                      >
+                        <div className="flex items-center">
+                          Date
+                          {getSortIcon('date', orderSortConfig)}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleOrderSort('price')}
+                      >
+                        <div className="flex items-center">
+                          Amount
+                          {getSortIcon('price', orderSortConfig)}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
                         onClick={() => handleOrderSort('userEmail')}
                       >
                         <div className="flex items-center">
@@ -1233,28 +1264,35 @@ export function AdminDashboard() {
                             <div className="flex flex-col">
                               <span className="font-mono text-[9px] text-brand-primary mb-1">#{order.id.slice(-8)}</span>
                               <span className="text-base font-black text-white uppercase font-display leading-tight">{order.game}</span>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] font-bold text-gray-400">{order.amount} {order.game === 'Free Fire' ? 'Diamonds' : 'Gold'}</span>
-                                <span className="w-1 h-1 rounded-full bg-white/20" />
-                                <span className="text-xs font-black text-brand-secondary">{formatCurrency(order.price)}</span>
-                              </div>
                             </div>
                           </td>
                           <td className="px-4 py-6">
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-white">{new Date(order.date).toLocaleDateString()}</span>
+                              <span className="text-[10px] text-gray-500">{new Date(order.date).toLocaleTimeString()}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-6">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-black text-brand-primary font-display">{formatCurrency(order.price)}</span>
+                              <span className="text-[9px] font-bold text-gray-500 uppercase">{order.amount} units</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-6">
+                            <div className="flex flex-col gap-1.5">
                               <div className="flex items-center gap-1.5">
                                 <Users className="w-3 h-3 text-gray-500" />
                                 <span className="text-[9px] text-gray-400 font-bold uppercase truncate max-w-[120px]">{order.userEmail || 'guest@example.com'}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center">
-                                  <span className="text-[8px] font-black text-brand-secondary">ID</span>
+                                <div className="w-5 h-5 rounded bg-white/5 flex items-center justify-center">
+                                  <span className="text-[7px] font-black text-brand-secondary">ID</span>
                                 </div>
-                                <span className="text-xs font-black text-gray-200 font-mono tracking-wider">{order.playerId || 'N/A'}</span>
+                                <span className="text-[10px] font-black text-gray-200 font-mono tracking-wider">{order.playerId || 'N/A'}</span>
                               </div>
-                              <div className="px-2 py-1 bg-brand-primary/5 border border-brand-primary/10 rounded-lg flex items-center justify-between gap-2 max-w-[180px]">
-                                <span className="text-[9px] text-brand-primary font-black tracking-widest truncate">{order.transactionId || 'N/A'}</span>
-                                <span className="text-[8px] font-black text-brand-secondary">{order.paymentMethod || 'BKASH'}</span>
+                              <div className="px-1.5 py-0.5 bg-brand-primary/5 border border-brand-primary/10 rounded flex items-center justify-between gap-2 max-w-[150px]">
+                                <span className="text-[8px] text-brand-primary font-black tracking-widest truncate">{order.transactionId || 'N/A'}</span>
+                                <span className="text-[7px] font-black text-brand-secondary">{order.paymentMethod || 'BKASH'}</span>
                               </div>
                             </div>
                           </td>
@@ -1364,7 +1402,15 @@ export function AdminDashboard() {
                           {getSortIcon('name', userSortConfig)}
                         </div>
                       </th>
-                      <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest">Role</th>
+                      <th 
+                        className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                        onClick={() => handleSort('isAdmin')}
+                      >
+                        <div className="flex items-center">
+                          Role
+                          {getSortIcon('isAdmin', userSortConfig)}
+                        </div>
+                      </th>
                       <th className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-center">Status</th>
                       <th 
                         className="px-4 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest cursor-pointer hover:text-white transition-colors text-center"

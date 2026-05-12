@@ -30,7 +30,14 @@ export function Dashboard() {
       navigate('/auth');
       return;
     }
-    const user = JSON.parse(savedUser);
+    let user;
+    try {
+      user = JSON.parse(savedUser);
+    } catch (e) {
+      localStorage.removeItem('zus_user');
+      navigate('/auth');
+      return;
+    }
     setUserProfile(user);
     setProfileForm({ name: user.name || '' });
 
@@ -67,9 +74,14 @@ export function Dashboard() {
       // Fallback
       const savedOrders = localStorage.getItem('zus_orders');
       if (savedOrders) {
-        const allOrders = JSON.parse(savedOrders);
-        const userOrders = allOrders.filter((order: any) => order.userEmail === user.email);
-        setOrders(userOrders);
+        try {
+          const allOrders = JSON.parse(savedOrders);
+          const ordersArray = Array.isArray(allOrders) ? allOrders : [];
+          const userOrders = ordersArray.filter((order: any) => order.userEmail === user.email);
+          setOrders(userOrders);
+        } catch (e) {
+          setOrders([]);
+        }
       }
       setIsLoading(false);
     };
