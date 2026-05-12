@@ -17,6 +17,11 @@ export function Auth() {
     if (params.get('reset') === 'true') {
       setIsResetSession(true);
     }
+    
+    // Check if we should start in signup mode
+    if (location.state?.mode === 'signup') {
+      setIsLogin(false);
+    }
   }, [location]);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -162,7 +167,7 @@ Please contact the user or verify the request.
             };
             localStorage.setItem('zus_user', JSON.stringify(userData));
             toast.success('Successfully logged in!');
-            navigate('/dashboard');
+            navigate('/');
             return;
           }
         } else {
@@ -194,7 +199,7 @@ Please contact the user or verify the request.
                 };
                 localStorage.setItem('zus_user', JSON.stringify(userData));
                 toast.success('Successfully logged in!');
-                navigate('/dashboard');
+                navigate('/');
                 return;
               }
             }
@@ -212,7 +217,7 @@ Please contact the user or verify the request.
              };
              localStorage.setItem('zus_user', JSON.stringify(userData));
              toast.success('Account created successfully!');
-             navigate('/dashboard');
+             navigate('/');
              return;
           }
         }
@@ -249,7 +254,7 @@ Please contact the user or verify the request.
         if (existingUser.password === password) {
           toast.success('Account already exists. Logging you in...');
           localStorage.setItem('zus_user', JSON.stringify({ ...existingUser, isLoggedIn: true }));
-          navigate('/dashboard');
+          navigate('/');
           return;
         } else {
           toast.error('An account with this email already exists with a different password.');
@@ -273,7 +278,7 @@ Please contact the user or verify the request.
       toast.success('Account created successfully!');
     }
 
-    navigate('/dashboard');
+    navigate('/');
   };
 
   return (

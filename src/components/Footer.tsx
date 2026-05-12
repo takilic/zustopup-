@@ -1,7 +1,31 @@
-import { Gamepad2, Globe, Play, ExternalLink, MessageCircle, Share2 } from 'lucide-react';
+import { Gamepad2, Globe, MessageCircle, Phone, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 export function Footer() {
+  const [socials, setSocials] = useState<any[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('zus_socials');
+    if (saved) {
+      try {
+        setSocials(JSON.parse(saved));
+      } catch (e) {
+        setSocials([]);
+      }
+    }
+  }, []);
+
+  const getIcon = (name: string) => {
+    switch (name) {
+      case 'MessageCircle': return <MessageCircle className="w-5 h-5" />;
+      case 'Phone': return <Phone className="w-5 h-5" />;
+      case 'Globe': return <Globe className="w-5 h-5" />;
+      case 'Share2': return <Share2 className="w-5 h-5" />;
+      default: return <Share2 className="w-5 h-5" />;
+    }
+  };
+
   return (
     <footer className="bg-surface border-t border-white/5 pt-16 pb-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -34,15 +58,27 @@ export function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6">Connect With Us</h4>
             <div className="flex gap-4 mb-8">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-primary transition-colors text-white">
-                <MessageCircle className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-primary transition-colors text-white">
-                <Share2 className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-primary transition-colors text-white">
-                <Globe className="w-5 h-5" />
-              </a>
+              {socials.length > 0 ? socials.map((social) => (
+                <a 
+                  key={social.id}
+                  href={social.url} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-primary transition-colors text-white"
+                  title={social.platform}
+                >
+                  {getIcon(social.icon)}
+                </a>
+              )) : (
+                <>
+                  <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-primary transition-colors text-white">
+                    <MessageCircle className="w-5 h-5" />
+                  </a>
+                  <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-primary transition-colors text-white">
+                    <Share2 className="w-5 h-5" />
+                  </a>
+                </>
+              )}
             </div>
             <p className="text-sm text-gray-500">
               Accepted Payments: bKash, Nagad

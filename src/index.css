@@ -14,6 +14,9 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-[#0a0a0c] text-slate-100 font-sans antialiased selection:bg-violet-500/30 selection:text-white;
   }

@@ -10,6 +10,7 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { Home } from './pages/Home';
 import { GameDetail } from './pages/GameDetail';
 import { Dashboard } from './pages/Dashboard';
+import { Support } from './pages/Support';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { Auth } from './pages/Auth';
 import { Toaster } from 'react-hot-toast';
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/game/:id" element={<GameDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/support" element={<Support />} />
               <Route path="/admin" element={<AdminDashboard />} />
             </Routes>
           </AnimatePresence>

@@ -126,8 +126,12 @@ export function Home() {
             </p>
             
             <div className="flex flex-wrap gap-6 pt-2">
-              <Link to={user ? "/dashboard" : "/auth"} className="btn-primary px-10 py-5 rounded-2xl group uppercase font-black tracking-widest text-[11px] flex items-center gap-3">
-                {user ? "MY DASHBOARD" : "GET STARTED"}
+              <Link 
+                to={user ? "/dashboard" : "/auth"} 
+                state={!user ? { mode: 'signup' } : undefined}
+                className="btn-primary px-10 py-5 rounded-2xl group uppercase font-black tracking-widest text-[11px] flex items-center gap-3"
+              >
+                {user ? "MY DASHBOARD" : "CREATE ACCOUNT"}
                 <Zap className="w-4 h-4 group-hover:fill-current transition-all" />
               </Link>
             </div>
@@ -242,6 +246,7 @@ export function Home() {
                 <div className="pt-4">
                   <Link 
                     to="/auth" 
+                    state={{ mode: 'signup' }}
                     className="btn-primary px-12 py-6 rounded-2xl flex items-center gap-4 group w-fit"
                   >
                     <span className="font-black tracking-widest text-xs">CREATE ACCOUNT NOW</span>

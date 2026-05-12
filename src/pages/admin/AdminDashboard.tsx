@@ -26,18 +26,28 @@ import {
   CheckCircle2,
   Trash2,
   Gamepad2,
-  CreditCard
+  CreditCard,
+  Share2,
+  MessageCircle,
+  HelpCircle,
+  Phone,
+  Globe,
+  Settings
 } from 'lucide-react';
 import { formatCurrency, cn } from '../../lib/utils';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'users' | 'packages' | 'games' | 'payments'>('orders');
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'users' | 'packages' | 'games' | 'payments' | 'socials' | 'support'>('orders');
   const [orders, setOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
   const [gamesList, setGamesList] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [socialLinks, setSocialLinks] = useState<any[]>([]);
+  const [supportData, setSupportData] = useState<any>(null);
+  const [editingSocial, setEditingSocial] = useState<any | null>(null);
+  const [isAddingSocial, setIsAddingSocial] = useState(false);
   const [editingPackage, setEditingPackage] = useState<any | null>(null);
   const [isAddingPackage, setIsAddingPackage] = useState(false);
   const [editingGame, setEditingGame] = useState<any | null>(null);
@@ -55,6 +65,10 @@ export function AdminDashboard() {
   const [userSortConfig, setUserSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'joinedAt', direction: 'desc' });
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -150,6 +164,37 @@ export function AdminDashboard() {
         ];
         localStorage.setItem('zus_payment_methods', JSON.stringify(defaultPayments));
         setPaymentMethods(defaultPayments);
+      }
+
+      const savedSocials = localStorage.getItem('zus_socials');
+      if (savedSocials) {
+        setSocialLinks(JSON.parse(savedSocials));
+      } else {
+        const defaultSocials = [
+          { id: '1', platform: 'Facebook', url: '#', icon: 'Facebook' },
+          { id: '2', platform: 'Telegram', url: '#', icon: 'MessageCircle' },
+          { id: '3', platform: 'WhatsApp', url: '#', icon: 'Phone' }
+        ];
+        localStorage.setItem('zus_socials', JSON.stringify(defaultSocials));
+        setSocialLinks(defaultSocials);
+      }
+
+      const savedSupport = localStorage.getItem('zus_support');
+      if (savedSupport) {
+        setSupportData(JSON.parse(savedSupport));
+      } else {
+        const defaultSupport = {
+          title: 'ZUS SUPPORT CENTER',
+          description: 'We are here to help you 24/7 with any issues.',
+          telegram: '@zustopup',
+          whatsapp: '+8801700000000',
+          faqs: [
+            { id: '1', question: 'How long does top-up take?', answer: 'Most top-ups are instant, but some may take 5-30 minutes.' },
+            { id: '2', question: 'Is it safe?', answer: 'Yes, we use secure gateways and verified diamond sources.' }
+          ]
+        };
+        localStorage.setItem('zus_support', JSON.stringify(defaultSupport));
+        setSupportData(defaultSupport);
       }
     };
 
@@ -344,6 +389,72 @@ export function AdminDashboard() {
       toast.success('Package deleted');
     }
   };
+
+  const handleSaveSocial = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const socialData = {
+      id: editingSocial?.id || Date.now().toString(),
+      platform: formData.get('platform'),
+      url: formData.get('url'),
+      icon: formData.get('icon') || 'Globe'
+    };
+
+    let updated;
+    if (editingSocial) {
+      updated = socialLinks.map(s => s.id === editingSocial.id ? socialData : s);
+    } else {
+      updated = [...socialLinks, socialData];
+    }
+
+    localStorage.setItem('zus_socials', JSON.stringify(updated));
+    setSocialLinks(updated);
+    setEditingSocial(null);
+    setIsAddingSocial(false);
+    toast.success('Social link saved');
+  };
+
+  const handleDeleteSocial = (id: string) => {
+    const updated = socialLinks.filter(s => s.id !== id);
+    localStorage.setItem('zus_socials', JSON.stringify(updated));
+    setSocialLinks(updated);
+    toast.success('Social link deleted');
+  };
+
+  const handleSaveSupport = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    // Handle FAQs separately if needed, but for now just basic info
+    const newSupport = {
+      ...supportData,
+      title: formData.get('title'),
+      description: formData.get('description'),
+      telegram: formData.get('telegram'),
+      whatsapp: formData.get('whatsapp')
+    };
+
+    localStorage.setItem('zus_support', JSON.stringify(newSupport));
+    setSupportData(newSupport);
+    toast.success('Support settings updated');
+  };
+
+  const handleAddFAQ = () => {
+    const q = prompt('Question:');
+    const a = prompt('Answer:');
+    if (q && a) {
+      const newFAQ = { id: Date.now().toString(), question: q, answer: a };
+      const updated = { ...supportData, faqs: [...(supportData?.faqs || []), newFAQ] };
+      localStorage.setItem('zus_support', JSON.stringify(updated));
+      setSupportData(updated);
+    }
+  };
+
+  const handleDeleteFAQ = (id: string) => {
+    const updated = { ...supportData, faqs: supportData.faqs.filter((f: any) => f.id !== id) };
+    localStorage.setItem('zus_support', JSON.stringify(updated));
+    setSupportData(updated);
+  };
   
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -462,6 +573,8 @@ export function AdminDashboard() {
               { id: 'packages', label: 'Packages', icon: Package },
               { id: 'games', label: 'Games', icon: Gamepad2 },
               { id: 'payments', label: 'Payments', icon: CreditCard },
+              { id: 'socials', label: 'Socials', icon: Share2 },
+              { id: 'support', label: 'Support', icon: MessageCircle },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -821,6 +934,75 @@ export function AdminDashboard() {
                   </button>
                   <button type="submit" className="btn-primary flex-1">
                     Save Package
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {(isAddingSocial || editingSocial) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-bg-dark border border-white/10 rounded-3xl p-8 w-full max-w-md shadow-2xl relative"
+            >
+              <h3 className="text-2xl font-black mb-6 uppercase tracking-tight">
+                {editingSocial ? 'Edit Social Link' : 'Add Social Link'}
+              </h3>
+              <form onSubmit={handleSaveSocial} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Platform Name</label>
+                  <input 
+                    name="platform"
+                    type="text"
+                    required
+                    defaultValue={editingSocial?.platform}
+                    placeholder="Facebook"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">URL</label>
+                  <input 
+                    name="url"
+                    type="text"
+                    required
+                    defaultValue={editingSocial?.url}
+                    placeholder="https://facebook.com/..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Icon Name (Lucide)</label>
+                  <select 
+                    name="icon"
+                    defaultValue={editingSocial?.icon || 'Globe'}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary appearance-none font-sans"
+                  >
+                    <option value="Globe" className="bg-bg-dark">Website/Link</option>
+                    <option value="MessageCircle" className="bg-bg-dark">Telegram/WhatsApp/Chat</option>
+                    <option value="Phone" className="bg-bg-dark">Phone/Support</option>
+                    <option value="Share2" className="bg-bg-dark">Social Media</option>
+                  </select>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    type="button" 
+                    onClick={() => { setIsAddingSocial(false); setEditingSocial(null); }}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary flex-1">
+                    Save Social
                   </button>
                 </div>
               </form>
@@ -1390,6 +1572,158 @@ export function AdminDashboard() {
                   </tbody>
                  </table>
                </div>
+            </div>
+          </motion.div>
+        ) : activeTab === 'socials' ? (
+          <motion.div
+            key="socials"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-8"
+          >
+            <div className="flex items-center justify-between px-4">
+              <h3 className="text-2xl font-black flex items-center gap-3 font-display uppercase tracking-tight">
+                <Share2 className="w-7 h-7 text-brand-primary" />
+                SOCIAL MEDIA
+              </h3>
+              <button 
+                onClick={() => setIsAddingSocial(true)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Add Link
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {socialLinks.map((social) => (
+                <div key={social.id} className="glass-card p-6 flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-brand-primary border border-white/10 group-hover:bg-brand-primary/20 transition-all">
+                      {social.icon === 'Phone' && <Phone className="w-6 h-6" />}
+                      {social.icon === 'MessageCircle' && <MessageCircle className="w-6 h-6" />}
+                      {social.icon === 'Globe' && <Globe className="w-6 h-6" />}
+                      {social.icon !== 'Phone' && social.icon !== 'MessageCircle' && social.icon !== 'Globe' && <Share2 className="w-6 h-6" />}
+                    </div>
+                    <div>
+                      <h4 className="font-black uppercase tracking-tight">{social.platform}</h4>
+                      <p className="text-[10px] text-gray-500 truncate max-w-[150px]">{social.url}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setEditingSocial(social)}
+                      className="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteSocial(social.id)}
+                      className="p-2 bg-white/5 rounded-lg hover:bg-red-500/10 text-red-500"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        ) : activeTab === 'support' ? (
+          <motion.div
+            key="support"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-8"
+          >
+            <div className="flex items-center justify-between px-4">
+              <h3 className="text-2xl font-black flex items-center gap-3 font-display uppercase tracking-tight">
+                <HelpCircle className="w-7 h-7 text-brand-primary" />
+                SUPPORT CENTER
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="glass-card p-8">
+                <h4 className="text-lg font-black mb-6 uppercase tracking-tight flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-brand-primary" />
+                  General Settings
+                </h4>
+                <form onSubmit={handleSaveSupport} className="space-y-6">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Support Title</label>
+                    <input 
+                      name="title"
+                      defaultValue={supportData?.title}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Description</label>
+                    <textarea 
+                      name="description"
+                      defaultValue={supportData?.description}
+                      rows={3}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary resize-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Telegram Handle</label>
+                      <input 
+                        name="telegram"
+                        defaultValue={supportData?.telegram}
+                        placeholder="@username"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">WhatsApp Number</label>
+                      <input 
+                        name="whatsapp"
+                        defaultValue={supportData?.whatsapp}
+                        placeholder="+880..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand-primary font-mono"
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-primary w-full py-4">Save Support Settings</button>
+                </form>
+              </div>
+
+              <div className="glass-card p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-brand-primary" />
+                    FAQ Management
+                  </h4>
+                  <button 
+                    onClick={handleAddFAQ}
+                    className="p-2 bg-brand-primary/10 text-brand-primary rounded-lg hover:bg-brand-primary/20 transition-all font-black text-[10px] uppercase tracking-widest px-4"
+                  >
+                    Add FAQ
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {supportData?.faqs?.map((faq: any) => (
+                    <div key={faq.id} className="p-4 bg-white/5 rounded-2xl border border-white/5 relative group">
+                      <button 
+                        onClick={() => handleDeleteFAQ(faq.id)}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <p className="text-sm font-black text-white mb-1 uppercase tracking-tight">{faq.question}</p>
+                      <p className="text-xs text-gray-400 italic">"{faq.answer}"</p>
+                    </div>
+                  ))}
+                  {(!supportData?.faqs || supportData.faqs.length === 0) && (
+                    <div className="py-12 text-center text-gray-600 italic">No FAQs added yet.</div>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         ) : (
